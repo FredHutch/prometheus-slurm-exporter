@@ -25,14 +25,14 @@ import (
 
 func init() {
   // Metrics have to be registered to be exposed
-  prometheus.MustRegister(NewSchedulerCollector()) // from scheduler.go
-  prometheus.MustRegister(NewQueueCollector())     // from queue.go
+  //prometheus.MustRegister(NewSchedulerCollector()) // from scheduler.go
+  //prometheus.MustRegister(NewQueueCollector())     // from queue.go
   prometheus.MustRegister(NewNodesCollector())     // from nodes.go
 }
 
 var listenAddress = flag.String(
   "listen-address",
-  ":8080",
+  ":9901",
   "The address to listen on for HTTP requests.")
 
 func main() {
