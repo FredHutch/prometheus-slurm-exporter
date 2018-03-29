@@ -16,30 +16,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 package main
 
 import (
-  "flag"
-  "net/http"
-  "github.com/prometheus/common/log"
-  "github.com/prometheus/client_golang/prometheus"
-  "github.com/prometheus/client_golang/prometheus/promhttp"
+	"flag"
+	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/log"
+	"net/http"
+	"os"
 )
 
 func init() {
-  // Metrics have to be registered to be exposed
-  //prometheus.MustRegister(NewSchedulerCollector()) // from scheduler.go
-  //prometheus.MustRegister(NewQueueCollector())     // from queue.go
-  prometheus.MustRegister(NewNodesCollector())     // from nodes.go
+	// Metrics have to be registered to be exposed
+	//prometheus.MustRegister(NewSchedulerCollector()) // from scheduler.go
+	//prometheus.MustRegister(NewQueueCollector())     // from queue.go
+	prometheus.MustRegister(NewNodesCollector()) // from nodes.go
 }
 
-var listenAddress = flag.String(
-  "listen-address",
-  ":9901",
-  "The address to listen on for HTTP requests.")
+var listenAddress = flag.String("listen-address", "", "The address to listen on for HTTP requests.")
+var cluster = flag.String("cluster", "", "Required: Slurm cluster name (gizmo or bealge)")
 
 func main() {
-  flag.Parse()
-  // The Handler function provides a default handler to expose metrics
+	flag.Parse()
+
+	// the port flag is required
+	if *listenAddress == "" {
+		fmt.Fprintf(os.Stderr, "\nMissing required --listenAddress flag\n\n")
+		flag.Usage()
+		os.Exit(2)
+	}
+
+	// the cluster flag is required
+	if *cluster == "" {
+		fmt.Fprintf(os.Stderr, "\nMissing required --cluster flag\n\n")
+		flag.Usage()
+		os.Exit(2)
+	}
+
+	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
-  log.Infof("Starting Server: %s", *listenAddress)
-  http.Handle("/metrics", promhttp.Handler())
-  log.Fatal(http.ListenAndServe(*listenAddress, nil))
+	log.Infof("Starting Server: %s", ":"+*listenAddress)
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatal(http.ListenAndServe(":"+*listenAddress, nil))
 }

@@ -66,7 +66,7 @@ func ParseNodesMetrics(input []byte) *NodesMetrics {
 	lines_uniq := RemoveDuplicates(lines)
 
 	for _, line := range lines_uniq {
-		if strings.Contains(line, ",") && !strings.Contains(line, "~"){
+		if strings.Contains(line, ",") && !strings.Contains(line, "~") {
 			state := strings.Split(line, ",")[1]
 			alloc := regexp.MustCompile(`^alloc`)
 			comp := regexp.MustCompile(`^comp`)
@@ -107,7 +107,7 @@ func ParseNodesMetrics(input []byte) *NodesMetrics {
 
 // Execute the squeue command and return its output
 func NodesData() []byte {
-	cmd := exec.Command("sinfo", "-M", "beagle", "-h", "-o %n,%T")
+	cmd := exec.Command("sinfo", "-M", *cluster, "-h", "-o %n,%T")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)
