@@ -1,0 +1,20 @@
+#
+# Use this makefile for creating the debian package:
+#     make -f Makefile.deb deb
+#
+# To build, make sure a current go (version 1.15 was current) is installed
+# somewhere and that the rules file has been updated with the path to the go
+# binary and GOPATH set to someplace writable.
+
+PROJECT_NAME = prometheus-slurm-exporter
+VERSION=0.15
+
+deb: tar
+	debuild -us -uc
+
+tar:
+	cd .. && tar --exclude=debian --exclude=.gitignore --exclude=.git \
+		-c -f prometheus-slurm-exporter_0.15.orig.tar ./prometheus-slurm-exporter
+	cd .. && xz --force prometheus-slurm-exporter_0.15.orig.tar
+
+.phony: tar deb
