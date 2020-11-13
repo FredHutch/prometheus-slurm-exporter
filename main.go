@@ -1,4 +1,4 @@
-/* Copyright 2017 Victor Penso, Matteo Dessalvi
+/* Copyright 2017-2020 Victor Penso, Matteo Dessalvi
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,44 +17,33 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
 	"net/http"
-	"os"
 )
 
 func init() {
 	// Metrics have to be registered to be exposed
-	//prometheus.MustRegister(NewSchedulerCollector()) // from scheduler.go
-	//prometheus.MustRegister(NewQueueCollector())     // from queue.go
-	prometheus.MustRegister(NewNodesCollector()) // from nodes.go
+	prometheus.MustRegister(NewSchedulerCollector())      // from scheduler.go
+	prometheus.MustRegister(NewQueueCollector())          // from queue.go
+	prometheus.MustRegister(NewNodesCollector())          // from nodes.go
+	prometheus.MustRegister(NewCPUsCollector())           // from cpus.go
+	prometheus.MustRegister(NewAccountsCollector())       // from accounts.go
+	prometheus.MustRegister(NewUsersCollector())          // from users.go
+	prometheus.MustRegister(NewPartitionsCollector())     // from partitions.go
 }
 
-var listenAddress = flag.String("listen-address", "", "The address to listen on for HTTP requests.")
-var cluster = flag.String("cluster", "", "Required: Slurm cluster name (gizmo or bealge)")
+var listenAddress = flag.String(
+	"listen-address",
+	":8080",
+	"The address to listen on for HTTP requests.")
 
 func main() {
 	flag.Parse()
-
-	// the port flag is required
-	if *listenAddress == "" {
-		fmt.Fprintf(os.Stderr, "\nMissing required --listenAddress flag\n\n")
-		flag.Usage()
-		os.Exit(2)
-	}
-
-	// the cluster flag is required
-	if *cluster == "" {
-		fmt.Fprintf(os.Stderr, "\nMissing required --cluster flag\n\n")
-		flag.Usage()
-		os.Exit(2)
-	}
-
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
-	log.Infof("Starting Server: %s", ":"+*listenAddress)
+	log.Infof("Starting Server: %s", *listenAddress)
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(":"+*listenAddress, nil))
+	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }

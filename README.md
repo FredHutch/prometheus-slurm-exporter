@@ -4,6 +4,16 @@ Prometheus collector and exporter for metrics extracted from the [Slurm](https:/
 
 ## Exported Metrics
 
+### State of the CPUs
+
+* **Allocated**: CPUs which have been allocated to a job.
+* **Idle**: CPUs not allocated to a job and thus available for use.
+* **Other**: CPUs which are unavailable for use at the moment.
+* **Total**: total number of CPUs.
+
+- [Information extracted from the SLURM **sinfo** command](https://slurm.schedmd.com/sinfo.html)
+- [Slurm CPU Management User and Administrator Guide](https://slurm.schedmd.com/cpu_management.html)
+
 ### State of the Nodes
 
 * **Allocated**: nodes which has been allocated to one or more jobs.
@@ -24,6 +34,7 @@ Prometheus collector and exporter for metrics extracted from the [Slurm](https:/
 ### Status of the Jobs
 
 * **PENDING**: Jobs awaiting for resource allocation.
+* **PENDING_DEPENDENCY**: Jobs awaiting because of a unexecuted job dependency.
 * **RUNNING**: Jobs currently allocated.
 * **SUSPENDED**: Job has an allocation but execution has been suspended and CPUs have been released for other jobs.
 * **CANCELLED**: Jobs which were explicitly cancelled by the user or system administrator.
@@ -37,78 +48,60 @@ Prometheus collector and exporter for metrics extracted from the [Slurm](https:/
 
 [Information extracted from the SLURM **squeue** command](https://slurm.schedmd.com/squeue.html)
 
+### State of the Partitions
+
+* Running/suspended Jobs per partitions, divided between Slurm accounts and users.
+* CPUs total/allocated/idle per partition plus used CPU per user ID.
+
+### Jobs information per Account and User
+
+The following information about jobs are also extracted via [squeue](https://slurm.schedmd.com/squeue.html):
+
+* **Running/Pending/Suspended** jobs per SLURM Account.
+* **Running/Pending/Suspended** jobs per SLURM User.
+
 ### Scheduler Information
 
 * **Server Thread count**: The number of current active ``slurmctld`` threads. 
 * **Queue size**: The length of the scheduler queue.
+* **DBD Agent queue size**: The length of the message queue for _SlurmDBD_.
 * **Last cycle**: Time in microseconds for last scheduling cycle.
 * **Mean cycle**: Mean of scheduling cycles since last reset.
 * **Cycles per minute**: Counter of scheduling executions per minute.
 * **(Backfill) Last cycle**: Time in microseconds of last backfilling cycle.
 * **(Backfill) Mean cycle**: Mean of backfilling scheduling cycles in microseconds since last reset.
 * **(Backfill) Depth mean**: Mean of processed jobs during backfilling scheduling cycles since last reset.
+* **(Backfill) Total Backfilled Jobs** (since last slurm start): number of jobs started thanks to backfilling since last Slurm start.
+* **(Backfill) Total Backfilled Jobs** (since last stats cycle start): number of jobs started thanks to backfilling since last time stats where reset.
+* **(Backfill) Total backfilled heterogeneous Job components**: number of heterogeneous job components started thanks to backfilling since last Slurm start.
 
 [Information extracted from the SLURM **sdiag** command](https://slurm.schedmd.com/sdiag.html)
 
-## How to install the exporter
+*DBD Agent queue size*: it is particularly important to keep track of it, since an increasing number of messages
+counted with this parameter almost always indicates three issues:
+* the _SlurmDBD_ daemon is down; 
+* the database is either down or unreachable;
+* the status of the Slurm accounting DB may be inconsistent (e.g. ``sreport`` missing data, weird utilization of the cluster, etc.).
 
-### Debian
 
-Install the Prometheus [Go client library](https://github.com/prometheus/client_golang)
+## Installation
 
-    >>> apt install -t jessie-backports golang-github-prometheus-client-golang-dev
+* Read [DEVELOPMENT.md](DEVELOPMENT.md) in order to build the Prometheus Slurm Exporter. After a successful build copy the executable
+`bin/prometheus-slurm-exporter` to a node with access to the Slurm command-line interface. 
 
-Use the [Makefile](Makefile) to build and test the code.
+* A [Systemd Unit][sdu] file to run the executable as service is available in [lib/systemd/prometheus-slurm-exporter.service](lib/systemd/prometheus-slurm-exporter.service).
 
-### CentOS
+* (**optional**) Distribute the exporter as a Snap package: consult the [following document](packages/snap/README.md). **NOTE**: this method requires the use of [Snap](https://snapcraft.io), which is built by [Canonical](https://canonical.com).
 
-Under CentOS not all the GOlang dependencies are available as packages.
-
-In order to use the [Makefile](Makefile) provided with this repository you can proceed as follows:
-
-1. Install the GOlang compiler plus GIT and make:
-```bash
-yum install git golang-bin make
-```
-
-2. Clone this repo and export the *GOPATH* environment variable:
-```bash
-git clone https://github.com/vpenso/prometheus-slurm-exporter.git
-cd prometheus-slurm-exporter
-export GOPATH=$(pwd):/usr/share/gocode
-```
-
-3. Install all the necessary GOlang dependencies:
-```bash
-go get github.com/prometheus/client_golang
-go get github.com/prometheus/client_model
-go get github.com/prometheus/common
-go get github.com/prometheus/procfs
-go get github.com/beorn7/perks/quantile
-go get github.com/golang/protobuf/proto
-go get github.com/matttproud/golang_protobuf_extensions/pbutil
-go get github.com/sirupsen/logrus
-go get gopkg.in/alecthomas/kingpin.v2
-```
-
-**NOTE**: all these packages will be saved under the ``src`` subdirectory of the Slurm exporter project.
-
-In some cases, the ``go get`` command may report the following message:
-```
-package github.com/[...]/[...]: no buildable Go source files
-```
-This should be considered harmless and it will not affect the build process.
-
-4. Build the executable:
-```bash
-make build
-```
+[sdu]: https://www.freedesktop.org/software/systemd/man/systemd.service.html
 
 ## Prometheus Configuration for the SLURM exporter
 
 It is strongly advisable to configure the Prometheus server with the following parameters:
 
 ```
+scrape_configs:
+
 #
 # SLURM resource manager:
 # 
@@ -125,6 +118,8 @@ It is strongly advisable to configure the Prometheus server with the following p
 * **scrape_interval**: a 30 seconds interval will avoid possible 'overloading' on the SLURM master due to frequent calls of sdiag/squeue/sinfo commands through the exporter.
 * **scrape_timeout**: on a busy SLURM master a too short scraping timeout will abort the communication from the Prometheus server toward the exporter, thus generating a ``context_deadline_exceeded`` error.
 
+The previous configuration file can be immediately used with a fresh installation of Promethues. At the same time, we highly recommend to include at least the ``global`` section into the configuration. Official documentation about __configuring Prometheus__ is [available here](https://prometheus.io/docs/prometheus/latest/configuration/configuration/).
+
 **NOTE**: the Prometheus server is using __YAML__ as format for its configuration file, thus **indentation** is really important. Before reloading the Prometheus server it would be better to check the syntax:
 
 ```
@@ -137,25 +132,19 @@ Checking prometheus.yml
 
 ## Grafana Dashboard
 
-A [dashboard](https://grafana.com/dashboards/4323) is available in order to visualize the exported metrics through [Grafana](https://grafana.com).
-
-The following are screenshots of the dashboard:
+A [dashboard](https://grafana.com/dashboards/4323) is available in order to
+visualize the exported metrics through [Grafana](https://grafana.com):
 
 ![Status of the Nodes](images/Node_Status.png)
+
 ![Status of the Jobs](images/Job_Status.png)
+
 ![SLURM Scheduler Information](images/Scheduler_Info.png)
-
-## Prometheus references
-
-* [GOlang Package Documentation](https://godoc.org/github.com/prometheus/client_golang/prometheus)
-* [Metric Types](https://prometheus.io/docs/concepts/metric_types/)
-* [Writing Exporters](https://prometheus.io/docs/instrumenting/writing_exporters/)
-* [Available Exporters](https://prometheus.io/docs/instrumenting/exporters/)
 
 
 ## License
 
-Copyright 2017 Victor Penso, Matteo Dessalvi
+Copyright 2017-2020 Victor Penso, Matteo Dessalvi
 
 This is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
