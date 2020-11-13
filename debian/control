@@ -1,0 +1,19 @@
+Source: prometheus-slurm-exporter
+Section: net
+Priority: extra
+Maintainer: Victor Penso <>
+Uploaders: Michael Gutteridge <mrg@fredhutch.org>
+Build-Depends: debhelper (>= 10)
+Standards-Version: 3.9.8
+Vcs-Git: https://github.com/vpenso/prometheus-slurm-exporter.git
+Vcs-Browser: https://github.com/vpenso/prometheus-slurm-exporter.git
+Homepage: https://github.com/vpenso/prometheus-slurm-exporter
+XS-Go-Import-Path: github.com/vpenso/prometheus-slurm-exporter
+
+Package: prometheus-slurm-exporter
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, slurm-client
+Enhances: 
+Built-Using:
+Description: Prometheus exporter for Slurm Workload Manager server metrics
+ Prometheus exporter for Slurm server metrics, written in Go.

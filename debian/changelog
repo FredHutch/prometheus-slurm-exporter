@@ -1,0 +1,11 @@
+prometheus-slurm-exporter (0.15-1) bionic; urgency=low
+
+  * Version update for local packaging
+
+ -- Michael Gutteridge <mrg@fredhutch.org>  Fri, 13 Nov 2020 13:25:35 -0800
+
+prometheus-slurm-exporter (0.15) bionic; urgency=low
+
+  * Initial release
+
+ -- Michael Gutteridge <mrg@fredhutch.org>  Thu, 12 Nov 2020 16:33:20 -0800
