@@ -1,0 +1,2 @@
+# The Go compiler is currently unable to produce read-only relocations
+prometheus-slurm-exporter: hardening-no-relro usr/bin/prometheus-slurm-exporter

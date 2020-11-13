@@ -1,0 +1,6 @@
+*.debhelper.log
+*.debhelper
+files
+debhelper-build-stamp
+prometheus-slurm-exporter
+*.substvars
