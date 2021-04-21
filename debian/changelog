@@ -1,3 +1,10 @@
+prometheus-slurm-exporter (0.19-fh1) bionic; urgency=low
+
+  * New upstream version
+  * Patches with per-account and per-user CPU usage in account collector
+
+ -- Michael Gutteridge <mrg@fredhutch.org>  Wed, 21 Apr 2021 13:46:59 -0700
+
 prometheus-slurm-exporter (0.15) bionic; urgency=low
 
   * Initial release
