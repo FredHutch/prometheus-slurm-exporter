@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"strings"
+  "regexp"
 	"strconv"
 )
 
@@ -38,7 +39,7 @@ func GPUsGetMetrics() *GPUsMetrics {
 func ParseAllocatedGPUs() float64 {
 	var num_gpus = 0.0
 
-	args := []string{"-a", "-X", "--format=Allocgres", "--state=RUNNING", "--noheader", "--parsable2"}
+	args := []string{"-a", "-X", "--format=AllocTRES", "--state=RUNNING", "--noheader", "--parsable2"}
 	output := string(Execute("sacct", args))
 	if len(output) > 0 {
 		for _, line := range strings.Split(output, "\n") {
@@ -56,6 +57,7 @@ func ParseAllocatedGPUs() float64 {
 
 func ParseTotalGPUs() float64 {
 	var num_gpus = 0.0
+	var node_gpus = 0.0
 
 	args := []string{"-h", "-o \"%n %G\""}
 	output := string(Execute("sinfo", args))
@@ -64,10 +66,27 @@ func ParseTotalGPUs() float64 {
 			if len(line) > 0 {
 				line = strings.Trim(line, "\"")
 				descriptor := strings.Fields(line)[1]
-				descriptor = strings.TrimPrefix(descriptor, "gpu:")
-				descriptor = strings.Split(descriptor, "(")[0]
-				node_gpus, _ :=  strconv.ParseFloat(descriptor, 64)
-				num_gpus += node_gpus
+        /* gres line may have multiple entries, find the one starting
+           with "gpu:"
+        */
+        for _, v := range strings.Split(descriptor, ","){
+          gpu_gres_line, _ := regexp.Match(`gpu:*`, []byte(v))
+          if gpu_gres_line {
+            gpu_gres_data := strings.Split(v, ":")
+            /* GRES descriptor can be of the form "gpu:<count>" or
+              "gpu:<type>:<count>". If there are more than 2 elements in
+              the array we can assume there's a "type" defined.
+
+              "no_consume" isn't supported here */
+            if len(gpu_gres_data) > 2 {
+              node_gpus, _ = strconv.ParseFloat(gpu_gres_data[2], 64)
+            } else {
+              node_gpus, _ = strconv.ParseFloat(gpu_gres_data[1], 64)
+            }
+            num_gpus += node_gpus
+            break
+          }
+        }
 			}
 		}
 	}
