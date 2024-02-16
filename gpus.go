@@ -36,6 +36,43 @@ func GPUsGetMetrics() *GPUsMetrics {
 	return ParseGPUsMetrics()
 }
 
+func ReturnGPUCountFromGres(gres string) float64 {
+  var node_gpus = 0.0
+  for _, v := range strings.Split(gres, ","){
+    gpu_gres_line, _ := regexp.Match(`gpu:*`, []byte(v))
+    if gpu_gres_line {
+      gpu_gres_data := strings.Split(v, ":")
+      /* GRES descriptor can be of the form "gpu:<count>" or
+        "gpu:<type>:<count>". If there are more than 2 elements in
+        the array we can assume there's a "type" defined.
+
+        "no_consume" isn't supported here */
+      if len(gpu_gres_data) > 2 {
+        node_gpus, _ = strconv.ParseFloat(gpu_gres_data[2], 64)
+      } else {
+        node_gpus, _ = strconv.ParseFloat(gpu_gres_data[1], 64)
+      }
+      break
+    }
+  }
+  return node_gpus
+}
+
+func ParseAllocTRES(tresline string) float64 {
+  /* return allocated gres/gpu from alloctres output of sacct */
+  /* billing=5,cpu=5,gres/gpu=1,node=1 */
+  var num_gpus = 0.0
+  for _, v := range strings.Split(tresline, ","){
+    gpu_entry, _ := regexp.Match("gres/gpu=*", []byte(v))
+    if gpu_entry {
+      count := strings.Split(v, "=")
+      num_gpus, _ = strconv.ParseFloat(count[1], 64)
+      break
+    }
+  }
+  return num_gpus
+}
+
 func ParseAllocatedGPUs() float64 {
 	var num_gpus = 0.0
 
@@ -45,8 +82,11 @@ func ParseAllocatedGPUs() float64 {
 		for _, line := range strings.Split(output, "\n") {
 			if len(line) > 0 {
 				line = strings.Trim(line, "\"")
+        /*
 				descriptor := strings.TrimPrefix(line, "gpu:")
 				job_gpus, _ := strconv.ParseFloat(descriptor, 64)
+        */
+        job_gpus := ParseAllocTRES(line)
 				num_gpus += job_gpus
 			}
 		}
