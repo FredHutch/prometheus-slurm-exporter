@@ -59,7 +59,7 @@ func ReturnGPUCountFromGres(gres string) float64 {
 }
 
 func ParseAllocTRES(tresline string) float64 {
-  /* return allocated gres/gpu from alloctres output of sacct */
+  /* return allocated gres/gpu from output of squeue */
   /* billing=5,cpu=5,gres/gpu=1,node=1 */
   var num_gpus = 0.0
   for _, v := range strings.Split(tresline, ","){
@@ -76,8 +76,8 @@ func ParseAllocTRES(tresline string) float64 {
 func ParseAllocatedGPUs() float64 {
 	var num_gpus = 0.0
 
-	args := []string{"-a", "-X", "--format=AllocTRES", "--state=RUNNING", "--noheader", "--parsable2"}
-	output := string(Execute("sacct", args))
+  args := []string{"-O", "tres-alloc:", "-r", "--noheader"}
+	output := string(Execute("squeue", args))
 	if len(output) > 0 {
 		for _, line := range strings.Split(output, "\n") {
 			if len(line) > 0 {
