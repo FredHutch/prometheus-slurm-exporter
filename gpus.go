@@ -76,7 +76,7 @@ func ParseAllocTRES(tresline string) float64 {
 func ParseAllocatedGPUs() float64 {
 	var num_gpus = 0.0
 
-  args := []string{"-O", "tres-alloc:", "-r", "--noheader"}
+  args := []string{"-t", "r", "-O", "tres-alloc:", "-r", "--noheader"}
 	output := string(Execute("squeue", args))
 	if len(output) > 0 {
 		for _, line := range strings.Split(output, "\n") {
