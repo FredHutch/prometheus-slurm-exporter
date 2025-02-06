@@ -1,3 +1,16 @@
+prometheus-slurm-exporter (0.20-fh2) noble; urgency=low
+
+  * Update dependency from slurm-client to slurm-smd-client
+
+ -- Michael Gutteridge <mrg@fredhutch.org>  Thu, 06 Feb 2025 12:42:01 -0800
+
+prometheus-slurm-exporter (0.20-fh1) noble; urgency=low
+
+  * New upstream version
+  * Includes improved GPU support
+
+ -- Michael Gutteridge <mrg@fredhutch.org>  Tue, 04 Feb 2025 14:47:05 -0800
+
 prometheus-slurm-exporter (0.19-fh1) bionic; urgency=low
 
   * New upstream version
